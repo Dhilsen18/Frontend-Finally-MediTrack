@@ -1,0 +1,41 @@
+{
+  "option": {
+    "home": "Inicio"
+  },
+  "login": {
+    "selectUserType": "Selecciona tu tipo de usuario"
+  },
+  "establishment": {
+    "establishments": "Ver Establecimientos",
+    "assignOperator": "Asignar Operador",
+    "addEstablishment": "Agregar Establecimiento",
+    "mapOfEstablishments": "Mapa de Establecimientos",
+    "operators": "Ver Operadores"
+  },
+  "monitoring": {
+    "devices": "Ver Dispositivos"
+  },
+  "logistics": {
+    "transports": "Ver Transportes"
+  },
+  "subscriptions": {
+    "plans": "Planes"
+  },
+  "common": {
+    "welcome": "Bienvenido",
+    "pageNotFound": "Página no encontrada",
+    "goHome": "Ir al Inicio",
+    "builtWith": "Hecho con",
+    "using": "utilizando",
+    "profile": "Perfil"
+  },
+  "iam": {
+    "profile": "Perfil",
+    "logout": "Cerrar Sesión"
+  },
+  "authoring-phrase": {
+    "intro": "Hecho con",
+    "use": "utilizando",
+    "author": "por el Equipo de Desarrollo de {brand}"
+  }
+}

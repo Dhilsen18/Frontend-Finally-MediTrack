@@ -1,0 +1,41 @@
+{
+  "option": {
+    "home": "Home"
+  },
+  "login": {
+    "selectUserType": "Select your user type"
+  },
+  "establishment": {
+    "establishments": "View Establishments",
+    "assignOperator": "Assign Operator",
+    "addEstablishment": "Add Establishment",
+    "mapOfEstablishments": "Map of Establishments",
+    "operators": "View Operators"
+  },
+  "monitoring": {
+    "devices": "View Devices"
+  },
+  "logistics": {
+    "transports": "View Transports"
+  },
+  "subscriptions": {
+    "plans": "Plans"
+  },
+  "common": {
+    "welcome": "Welcome",
+    "pageNotFound": "Page Not Found",
+    "goHome": "Go Home",
+    "builtWith": "Built with",
+    "using": "using",
+    "profile": "Profile"
+  },
+  "iam": {
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "authoring-phrase": {
+    "intro": "Made with",
+    "use": "using",
+    "author": "by {brand} Developer Team"
+  }
+}
