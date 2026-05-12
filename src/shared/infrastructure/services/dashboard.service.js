@@ -20,43 +20,70 @@ const endpoints = {
   transports: import.meta.env.VITE_LOGISTICS_ENDPOINT_PATH,
 };
 
-export const fetchDashboardData = async () => {
-  try {
-    const [
-      usersRes,
-      adminsRes,
-      subsRes,
-      estRes,
-      devRes,
-      opsRes,
-      transRes
-    ] = await Promise.all([
-      axios.get(`${apiUrls.users}${endpoints.users}`),
-      axios.get(`${apiUrls.admins}${endpoints.admins}`),
-      axios.get(`${apiUrls.subscriptions}${endpoints.subscriptions}`),
-      axios.get(`${apiUrls.establishments}${endpoints.establishments}`),
-      axios.get(`${apiUrls.devices}${endpoints.devices}`),
-      axios.get(`${apiUrls.operators}${endpoints.operators}`),
-      axios.get(`${apiUrls.transports}${endpoints.transports}`),
-    ]);
+const resourceKeys = ['users', 'admins', 'subscriptions', 'establishments', 'devices', 'operators', 'transports'];
 
-    return {
-      users: usersRes.data,
-      admins: adminsRes.data,
-      subscriptions: subsRes.data,
-      establishments: estRes.data,
-      devices: devRes.data,
-      operators: opsRes.data,
-      transports: transRes.data
-    };
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-    throw error;
+const joinUrl = (baseUrl, endpointPath) => {
+  const base = String(baseUrl || '').trim().replace(/\/+$/, '');
+  const path = String(endpointPath || '').trim().replace(/^\/+/, '');
+  if (!base || !path) return '';
+  return `${base}/${path}`;
+};
+
+const getResourceUrl = (resource) => joinUrl(apiUrls[resource], endpoints[resource]);
+
+const extractCollection = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== 'object') return [];
+
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.results)) return payload.results;
+  if (Array.isArray(payload.content)) return payload.content;
+
+  return [];
+};
+
+const validateResourceConfig = () => {
+  const missing = resourceKeys.filter((key) => !apiUrls[key] || !endpoints[key]);
+  if (missing.length > 0) {
+    console.error('[dashboard.service] Missing API config for resources:', missing);
   }
+};
+
+export const fetchDashboardData = async () => {
+  validateResourceConfig();
+
+  const requests = resourceKeys.map((resource) =>
+    axios
+      .get(getResourceUrl(resource), { timeout: 15000 })
+      .then((response) => ({ resource, data: extractCollection(response.data) }))
+  );
+
+  const settled = await Promise.allSettled(requests);
+  const payload = {};
+
+  settled.forEach((result, index) => {
+    const resource = resourceKeys[index];
+    if (result.status === 'fulfilled') {
+      payload[resource] = result.value.data;
+      return;
+    }
+
+    payload[resource] = [];
+    const status = result.reason?.response?.status;
+    const url = getResourceUrl(resource);
+    console.error(`[dashboard.service] Failed to fetch "${resource}" (${url})`, {
+      status,
+      message: result.reason?.message,
+    });
+  });
+
+  return payload;
 };
 export const createEstablishment = async (data) => {
   try {
-    const response = await axios.post(`${apiUrls.establishments}${endpoints.establishments}`, data);
+    const url = getResourceUrl('establishments');
+    const response = await axios.post(url, data);
     return response.data;
   } catch (error) {
     console.error('Error creating establishment:', error);
@@ -65,6 +92,7 @@ export const createEstablishment = async (data) => {
 };
 
 export const deleteOperator = async (id) => {
-  const response = await axios.delete(`${apiUrls.operators}${endpoints.operators}/${id}`);
+  const url = `${getResourceUrl('operators')}/${id}`;
+  const response = await axios.delete(url);
   return response.data;
 };

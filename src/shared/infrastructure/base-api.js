@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const platformApi = import.meta.env.VITE_LEARNING_PLATFORM_API_URL;
+const platformApi =
+    import.meta.env.VITE_LEARNING_PLATFORM_API_URL ||
+    import.meta.env.VITE_VITAL_CARE_API_URL;
 
 /**
  * Shared infrastructure base class that creates and exposes a pre-configured Axios instance.
@@ -13,14 +15,14 @@ export class BaseApi {
 
     /**
      * Initialises the Axios HTTP client with the platform base URL and default headers.
-     * The base URL is read from the `VITE_LEARNING_PLATFORM_API_URL` environment variable.
+     * The base URL is read from `VITE_LEARNING_PLATFORM_API_URL` and falls back to
+     * `VITE_VITAL_CARE_API_URL` to keep backward compatibility with current env files.
      */
     constructor() {
         this.#http = axios.create({
             baseURL: platformApi,
             headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
+                'Content-Type': 'application/json'
             }
         });
     }
