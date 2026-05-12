@@ -41,44 +41,49 @@ const goToProfile = () => {
   <pv-toast/>
   <pv-confirm-dialog/>
   <div class="layout-wrapper">
-    <div class="header">
-      <pv-toolbar class="bg-primary">
-        <!-- Logo -->
+    <header class="header">
+      <pv-toolbar class="app-toolbar">
         <template #start>
-          <img src="/logo.png" alt="VITAL CARE" class="logo" />
-        </template>
-
-        <!-- Navigation items dinámicos según rol -->
-        <template #center>
-          <div class="flex gap-2">
-            <pv-button v-for="item in items" :key="item.label" as-child v-slot="slotProps">
-              <router-link :to="item.to" :class="slotProps['class']">{{ t(item.label) }}</router-link>
-            </pv-button>
+          <div class="toolbar-start">
+            <img src="/logo.png" alt="VITAL CARE" class="logo" />
           </div>
         </template>
 
-        <!-- Right side: Profile Icon -->
+        <template #center>
+          <nav class="main-nav flex gap-2" aria-label="Principal">
+            <pv-button
+                v-for="item in items"
+                :key="item.label"
+                as-child
+                v-slot="slotProps"
+            >
+              <router-link :to="item.to" :class="['nav-link', slotProps['class']]">
+                {{ t(item.label) }}
+              </router-link>
+            </pv-button>
+          </nav>
+        </template>
+
         <template #end>
-          <div class="flex gap-3 align-items-center">
-            <!-- Profile Icon Button -->
+          <div class="toolbar-end flex gap-3 align-items-center">
             <button
+                type="button"
                 class="profile-btn"
                 @click="goToProfile"
-                title="Profile"
+                :title="t('common.profile')"
+                aria-label="Perfil"
             >
-              👤
+              <i class="pi pi-user" aria-hidden="true"></i>
             </button>
           </div>
         </template>
       </pv-toolbar>
-    </div>
+    </header>
 
-    <!-- Main Content -->
-    <div class="main-content">
+    <main class="main-content">
       <router-view/>
-    </div>
+    </main>
 
-    <!-- Language Switcher Bottom Left -->
     <div class="language-bottom-left">
       <language-switcher/>
     </div>
@@ -91,78 +96,136 @@ const goToProfile = () => {
   flex-direction: column;
   min-height: 100vh;
   position: relative;
+  background: var(--mt-bg);
 }
 
 .header {
   position: sticky;
   top: 0;
   z-index: 1000;
+  background: #0f172a; /* Solid fallback */
+}
+
+.toolbar-start {
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
 }
 
 .logo {
-  height: 40px;
+  height: 38px;
   width: auto;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.02);
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+  text-decoration: none !important;
+  padding: 0.6rem 1.25rem !important;
+  font-weight: 500;
+  font-size: 0.95rem;
+  border-radius: var(--mt-radius) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+.nav-link:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.router-link-active.nav-link {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .main-content {
   flex: 1;
-  min-height: calc(100vh - 120px);
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem;
+}
+
+.profile-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+}
+
+.profile-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .language-bottom-left {
   position: fixed;
-  bottom: 1rem;
-  left: 1rem;
+  bottom: 1.5rem;
+  left: 1.5rem;
   z-index: 999;
 }
 
-.flex {
-  display: flex;
-  flex-direction: row;
-}
-
-.gap-2 {
-  gap: 0.5rem;
-}
-
-.gap-3 {
-  gap: 1rem;
-}
-
-.align-items-center {
-  align-items: center;
-}
-
-.profile-btn {
-  background: transparent;
+:deep(.app-toolbar.p-toolbar) {
+  height: var(--nav-height);
+  padding: 0 2rem;
   border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-  font-size: 1.8rem;
-  transition: all 0.3s ease;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  border-radius: 0;
+  background: linear-gradient(to right, #0f172a, #1e293b);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+:deep(.p-toolbar-group-start),
+:deep(.p-toolbar-group-center),
+:deep(.p-toolbar-group-end) {
   display: flex;
   align-items: center;
-  justify-content: center;
-  filter: brightness(0) invert(1);
 }
 
-.profile-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
+@media (max-width: 1024px) {
+  :deep(.app-toolbar.p-toolbar) {
+    padding: 0 1rem;
+    height: auto;
+    flex-direction: column;
+    padding-bottom: 1rem;
+  }
 
-:deep(.p-toolbar) {
-  background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
-}
+  .main-nav {
+    margin: 0.5rem 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 
-:deep(.p-button-text) {
-  color: white;
-}
-
-:deep(.p-button-text:hover) {
-  background-color: rgba(255, 255, 255, 0.1);
+  .nav-link {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem;
+  }
 }
 </style>
