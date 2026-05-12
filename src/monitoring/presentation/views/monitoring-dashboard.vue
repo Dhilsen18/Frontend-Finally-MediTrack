@@ -93,7 +93,6 @@ const selectedEstablishment = ref(null);
 const selectedRegion = ref(null);
 
 const regions = [...new Set(db.establishments.map(e => e.city_region))];
-</script>
 
 // Chart 1: Biometric Monitoring (Line)
 const biometricData = computed(() => ({
@@ -224,8 +223,11 @@ const doughnutOptions = {
   }
 };
 
+</script>
+
 <template>
   <div class="dashboard-page">
+    <!-- Header Filters -->
     <header class="dashboard-header">
       <div class="header-content">
         <h1 class="page-title">Operational Control Center</h1>
@@ -247,7 +249,9 @@ const doughnutOptions = {
       </div>
     </header>
 
+    <!-- Bento Box Grid -->
     <div class="bento-grid">
+      <!-- Row 1: KPIs -->
       <div class="bento-card kpi-card">
         <div class="kpi-header">
           <span class="kpi-label">Active Sensors</span>
@@ -281,6 +285,7 @@ const doughnutOptions = {
         <div class="kpi-trend positive">Optimized</div>
       </div>
 
+      <!-- Row 2: Charts -->
       <div class="bento-card span-2 main-chart-card">
         <div class="card-header">
           <h3>Biometric Monitoring</h3>
@@ -301,6 +306,7 @@ const doughnutOptions = {
         </div>
       </div>
 
+      <!-- Row 3 -->
       <div class="bento-card efficiency-card">
         <div class="card-header">
           <h3>Response Efficiency</h3>
