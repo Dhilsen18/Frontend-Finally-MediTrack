@@ -1,228 +1,387 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { fetchDashboardData } from '../../../shared/infrastructure/services/dashboard.service.js';
 
-const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 
-const loading = ref(true);
-const establishment = ref(null);
-const operatorsCount = ref(0);
-const devicesCount = ref(0);
+const establishments = ref([]);
+const isLoading = ref(true);
+const searchQuery = ref('');
 
-function sameEst(a, b) {
-  return Number(a) === Number(b) || String(a) === String(b);
-}
-
-async function load() {
-  loading.value = true;
-  const eid = route.params.establishmentId;
+const loadData = async () => {
   try {
     const data = await fetchDashboardData();
-    establishment.value = data.establishments.find((e) => sameEst(e.id, eid)) ?? null;
-    operatorsCount.value = (data.operators || []).filter((op) => sameEst(op.establishment_id, eid)).length;
-    devicesCount.value = (data.devices || []).filter((d) => sameEst(d.establishment_id, eid)).length;
-  } catch (e) {
-    console.error(e);
-    establishment.value = null;
+    establishments.value = data.establishments;
+  } catch (error) {
+    console.error("Failed to load establishments", error);
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
-}
+};
 
-onMounted(load);
-watch(() => route.params.establishmentId, load);
-
-const displayType = computed(() => {
-  const raw = establishment.value?.establishment_type;
-  if (!raw) return '—';
-  return String(raw).replace(/_/g, ' ');
+const filteredEst = computed(() => {
+  if (!searchQuery.value) return establishments.value;
+  return establishments.value.filter(e =>
+      (e.establishment_name || '').toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      (e.city_region || '').toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
 });
 
-function goList() {
-  router.push({ name: 'establishments' });
-}
+const stats = computed(() => {
+  const total = establishments.value.length;
+  const hospitals = establishments.value.filter(e =>
+      e.establishment_type?.toUpperCase() === 'HOSPITAL'
+  ).length;
+  const warehouses = establishments.value.filter(e =>
+      ['WAREHOUSE', 'ALMACEN', 'ALMACÉN', 'FACTORY', 'PLANTA'].includes(e.establishment_type?.toUpperCase())
+  ).length;
 
-function goTeam() {
-  router.push({
-    name: 'establishment-team',
-    params: { establishmentId: route.params.establishmentId },
-  });
-}
+  return {
+    total,
+    hospitals,
+    warehouses,
+    others: total - (hospitals + warehouses)
+  };
+});
+
+onMounted(loadData);
+
+const viewDetails = (id) =>
+    router.push({
+      name: 'establishment-detail',
+      params: { establishmentId: String(id) },
+    });
+const goBack = () => router.back();
 </script>
 
 <template>
-  <div class="est-detail">
-    <header class="toolbar">
-      <pv-button
-        icon="pi pi-arrow-left"
-        class="p-button-text p-button-sm"
-        :aria-label="t('establishment.back')"
-        @click="goList"
-      />
-      <h1 class="title">{{ establishment?.establishment_name || t('establishment.detailTitle') }}</h1>
+  <div class="view-est-container">
+    <!-- Header Section -->
+    <header class="page-header">
+      <div class="title-group">
+        <h1 class="page-title">{{ t('establishment.establishments') }}</h1>
+        <p class="page-subtitle">Visualización y gestión de la red operativa de MediTrack.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <span class="label">Total</span>
+          <span class="value">{{ stats.total }}</span>
+        </div>
+        <div class="stat-pill blue">
+          <span class="label">Hospitales</span>
+          <span class="value">{{ stats.hospitals }}</span>
+        </div>
+        <div class="stat-pill teal">
+          <span class="label">Almacenes</span>
+          <span class="value">{{ stats.warehouses }}</span>
+        </div>
+        <div v-if="stats.others > 0" class="stat-pill gray">
+          <span class="label">Otros</span>
+          <span class="value">{{ stats.others }}</span>
+        </div>
+      </div>
     </header>
 
-    <div v-if="loading" class="state">
-      <i class="pi pi-spin pi-spinner" />
-      <span>{{ t('establishment.detailLoading') }}</span>
+    <!-- Toolbar -->
+    <div class="table-toolbar">
+      <div class="search-wrapper">
+        <i class="pi pi-search"></i>
+        <input v-model="searchQuery" type="text" placeholder="Filtrar por nombre o ciudad..." />
+      </div>
     </div>
 
-    <div v-else-if="!establishment" class="state warn">
-      <p>{{ t('establishment.notFound') }}</p>
-      <pv-button :label="t('establishment.back')" class="p-button-sm" @click="goList" />
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Sincronizando red de establecimientos...</p>
     </div>
 
-    <template v-else>
-      <div class="grid">
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldId') }}</span>
-          <span class="val">{{ establishment.id }}</span>
+    <!-- Data List -->
+    <div v-else class="est-list">
+      <div
+          v-for="est in filteredEst"
+          :key="est.id"
+          class="est-card"
+          role="button"
+          tabindex="0"
+          @click="viewDetails(est.id)"
+          @keydown.enter.prevent="viewDetails(est.id)"
+      >
+        <div
+            class="est-icon"
+            :class="(est.establishment_type || 'OTHER').toLowerCase().replace(/[^a-z0-9]/g, '') || 'other'"
+        >
+          <i :class="est.establishment_type === 'HOSPITAL' ? 'pi pi-heart-fill' : 'pi pi-box'"></i>
         </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldType') }}</span>
-          <span class="val">{{ displayType }}</span>
+
+        <div class="est-body">
+          <div class="est-main">
+            <h3>{{ est.establishment_name }}</h3>
+            <span class="type-tag">{{ est.establishment_type }}</span>
+          </div>
+          <div class="est-meta">
+            <span class="loc">
+              <i class="pi pi-map-marker"></i>
+              {{ est.city_region }}, {{ est.district }}
+            </span>
+            <span class="addr">{{ est.address }}</span>
+          </div>
         </div>
-        <div class="field span2">
-          <span class="lab">{{ t('establishment.fieldName') }}</span>
-          <span class="val">{{ establishment.establishment_name }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldAddress') }}</span>
-          <span class="val">{{ establishment.address || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldDistrict') }}</span>
-          <span class="val">{{ establishment.district || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldCity') }}</span>
-          <span class="val">{{ establishment.city_region || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldCountry') }}</span>
-          <span class="val">{{ establishment.country || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldPhone') }}</span>
-          <span class="val">{{ establishment.phone || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldEmail') }}</span>
-          <span class="val">{{ establishment.email || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldWebsite') }}</span>
-          <span class="val">{{ establishment.website || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldOperatorsCount') }}</span>
-          <span class="val">{{ operatorsCount }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldDevicesCount') }}</span>
-          <span class="val">{{ devicesCount }}</span>
+
+        <div class="est-actions">
+          <div class="status-indicator">
+            <span class="dot"></span>
+            Activo
+          </div>
+          <pv-button
+              icon="pi pi-chevron-right"
+              class="p-button-rounded p-button-text p-button-secondary"
+              @click.stop="viewDetails(est.id)"
+          />
         </div>
       </div>
 
-      <footer class="actions">
-        <pv-button :label="t('establishment.viewOperatorsTeam')" class="p-button-sm primary-cta" @click="goTeam" />
-      </footer>
-    </template>
+      <div v-if="filteredEst.length === 0" class="empty-state">
+        <i class="pi pi-filter-slash"></i>
+        <p>No se encontraron resultados para tu búsqueda.</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.est-detail {
-  max-width: 880px;
+.view-est-container {
+  padding: 2rem;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 1.25rem 1.5rem 2rem;
-  animation: fade 0.35s ease;
+  animation: fadeIn 0.5s ease-out;
 }
-@keyframes fade {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.toolbar {
+
+.page-header {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3rem;
+  gap: 2rem;
 }
-.title {
+
+.page-title {
+  font-size: 2.75rem;
+  font-weight: 800;
+  color: #1e293b;
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
 }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem 1rem;
+
+.page-subtitle {
+  color: #64748b;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
 }
-.field {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.55rem 0.75rem;
+
+.stats-row {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  gap: 1rem;
 }
-.field.span2 {
-  grid-column: span 2;
-}
-.lab {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.val {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #ea580c;
-  word-break: break-word;
-}
-.actions {
-  margin-top: 1.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.primary-cta {
-  background: #ea580c;
-  border-color: #ea580c;
-}
-.state {
+
+.stat-pill {
+  background: #f1f5f9;
+  padding: 0.5rem 1.25rem;
+  border-radius: 100px;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  color: #64748b;
-  font-size: 0.9rem;
-  padding: 2rem 0;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
 }
-.state.warn {
+
+.stat-pill .label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+.stat-pill .value { font-size: 1rem; font-weight: 800; color: #1e293b; }
+
+.stat-pill.blue { background: #eff6ff; border-color: #dbeafe; }
+.stat-pill.blue .label { color: #3b82f6; }
+
+.stat-pill.teal { background: #f0fdfa; border-color: #ccfbf1; }
+.stat-pill.teal .label { color: #0d9488; }
+
+.stat-pill.gray { background: #f8fafc; border-color: #e2e8f0; }
+.stat-pill.gray .label { color: #64748b; }
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-wrapper i {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.search-wrapper input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  outline: none;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.search-wrapper input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.loading-state {
+  display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  padding: 5rem;
+  color: #94a3b8;
 }
-@media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .field.span2 {
-    grid-column: span 1;
-  }
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f1f5f9;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.est-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.est-card {
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.est-card:hover {
+  transform: translateX(10px);
+  border-color: #3b82f6;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+.est-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.est-icon.hospital { background: #fee2e2; color: #ef4444; }
+.est-icon.warehouse,
+.est-icon.almacen,
+.est-icon.almacn { background: #fef9c3; color: #ca8a04; }
+.est-icon.other,
+.est-icon.distributioncenter,
+.est-icon.factory { background: #f1f5f9; color: #64748b; }
+
+.est-body {
+  flex: 1;
+}
+
+.est-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.est-main h3 { margin: 0; font-size: 1.25rem; font-weight: 800; color: #1e293b; }
+
+.type-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #f1f5f9;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.est-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.est-meta .loc { font-size: 0.9rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 0.5rem; }
+.est-meta .addr { font-size: 0.85rem; color: #94a3b8; }
+
+.est-actions {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.status-indicator .dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #10b981;
+}
+
+.empty-state {
+  padding: 5rem;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.empty-state i { font-size: 3rem; margin-bottom: 1rem; }
+
+@media (max-width: 768px) {
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .est-card { flex-direction: column; align-items: flex-start; }
+  .est-actions { width: 100%; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 1rem; }
 }
 </style>
