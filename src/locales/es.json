@@ -38,5 +38,10 @@
     "use": "utilizando",
     "author": "por el Equipo de Desarrollo de {brand}"
   },
-
+  "roles": {
+    "healthEntity": "Entidad de Salud",
+    "healthEntityDesc": "Gestiona establecimientos y operaciones",
+    "operationalStaff": "Personal Operativo",
+    "operationalStaffDesc": "Monitorea dispositivos y transportes"
+  }
 }

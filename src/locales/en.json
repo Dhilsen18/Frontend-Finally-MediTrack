@@ -37,5 +37,11 @@
     "intro": "Made with",
     "use": "using",
     "author": "by {brand} Developer Team"
+  },
+  "roles": {
+    "healthEntity": "Health Entity",
+    "healthEntityDesc": "Manage establishments and operations",
+    "operationalStaff": "Operational Staff",
+    "operationalStaffDesc": "Monitor devices and transports"
   }
 }
