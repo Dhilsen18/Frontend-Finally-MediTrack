@@ -64,3 +64,47 @@ const stats = computed(() => {
     </header>
   </div>
 </template>
+
+<div v-if="isLoading" class="loading-container">
+      <div class="pulse-loader"></div>
+      <p>Sincronizando red de sensores...</p>
+    </div>
+
+    <div v-else class="devices-grid">
+      <div v-for="dev in devices" :key="dev.id" class="op-card-premium">
+        <div class="op-card-main">
+          <div class="avatar-container">
+            <div class="avatar-circle" :class="getTempStatus(dev.temperature)">
+              <i class="pi pi-microchip"></i>
+            </div>
+            <div class="status-dot-online"></div>
+          </div>
+          
+          <div class="op-info">
+            <h3>{{ dev.exact_location }}</h3>
+            <span class="op-id">NOD: {{ dev.id }} • v1.4.2</span>
+          </div>
+        </div>
+
+        <div class="op-metrics">
+          <div class="metric">
+            <span class="m-label">Temperatura</span>
+            <span class="m-value" :class="getTempStatus(dev.temperature)">
+              {{ dev.temperature }}°C
+            </span>
+          </div>
+          <div class="metric">
+            <span class="m-label">Humedad</span>
+            <span class="m-value">{{ dev.humidity }}%</span>
+          </div>
+        </div>
+
+        <div class="op-footer">
+          <div class="signal-info">
+            <i class="pi pi-wifi"></i>
+            <span>Señal: Excelente</span>
+          </div>
+          <pv-button icon="pi pi-cog" class="p-button-rounded p-button-text p-button-secondary p-button-sm" />
+        </div>
+      </div>
+    </div>
