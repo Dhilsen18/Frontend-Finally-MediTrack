@@ -32,14 +32,14 @@ const loadData = async () => {
 
 const handleSave = async () => {
   if (isSaving.value) return;
-
+  
   isSaving.value = true;
   try {
     // Auto-generate fields
     const nameSlug = newEstablishment.value.establishment_name.toLowerCase().replace(/[^a-z0-9]/g, '');
     const randomPhone = Math.floor(900000000 + Math.random() * 99999999).toString();
     const now = new Date();
-
+    
     const payload = {
       ...newEstablishment.value,
       lat: (-12.04 + (Math.random() - 0.5) * 0.5).toFixed(6),
@@ -47,21 +47,21 @@ const handleSave = async () => {
       website: `www.${nameSlug}.com`,
       email: `${nameSlug}@gmail.com`,
       phone: randomPhone,
-      created_at: now.toLocaleString('es-PE', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      created_at: now.toLocaleString('es-PE', { 
+        year: 'numeric', month: '2-digit', day: '2-digit', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
       })
     };
 
     await createEstablishment(payload);
-
+    
     toast.add({
       severity: 'success',
       summary: 'Éxito',
       detail: 'Establecimiento registrado con datos automáticos',
       life: 3000
     });
-
+    
     // Limpiar formulario
     newEstablishment.value = {
       establishment_name: '',
@@ -70,7 +70,7 @@ const handleSave = async () => {
       district: '',
       address: ''
     };
-
+    
     // Refrescar tabla
     await loadData();
   } catch (error) {
@@ -93,7 +93,7 @@ onMounted(() => {
 <template>
   <div class="add-establishment-container">
     <pv-toast />
-
+    
     <!-- Header Section -->
     <header class="page-header">
       <h1 class="page-title">{{ t('establishment.addEstablishment') }}</h1>
@@ -107,7 +107,7 @@ onMounted(() => {
           <i class="pi pi-plus-circle"></i>
           <h3>Nuevo Establecimiento</h3>
         </div>
-
+        
         <form @submit.prevent="handleSave" class="establishment-form">
           <div class="form-grid">
             <div class="form-field">
@@ -135,7 +135,7 @@ onMounted(() => {
               <input v-model="newEstablishment.address" type="text" placeholder="Ej. Av. Las Flores 456" />
             </div>
           </div>
-
+          
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="isSaving">
               <i :class="isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i>
@@ -160,28 +160,28 @@ onMounted(() => {
         <div v-else class="table-responsive">
           <table class="data-table">
             <thead>
-            <tr>
-              <th>ID</th>
-              <th>Establecimiento</th>
-              <th>Contacto Digital</th>
-              <th>Teléfono</th>
-              <th>Creado el</th>
-            </tr>
+              <tr>
+                <th>ID</th>
+                <th>Establecimiento</th>
+                <th>Contacto Digital</th>
+                <th>Teléfono</th>
+                <th>Creado el</th>
+              </tr>
             </thead>
             <tbody>
-            <tr v-for="est in establishments" :key="est.id">
-              <td>#{{ est.id }}</td>
-              <td>
-                <div class="font-bold">{{ est.establishment_name }}</div>
-                <div class="text-sm text-gray">{{ est.city_region }}, {{ est.district }}</div>
-              </td>
-              <td>
-                <div class="text-blue">{{ est.website }}</div>
-                <div class="text-xs text-muted">{{ est.email }}</div>
-              </td>
-              <td>{{ est.phone || '9********' }}</td>
-              <td>{{ est.created_at || 'Recién creado' }}</td>
-            </tr>
+              <tr v-for="est in establishments" :key="est.id">
+                <td>#{{ est.id }}</td>
+                <td>
+                  <div class="font-bold">{{ est.establishment_name }}</div>
+                  <div class="text-sm text-gray">{{ est.city_region }}, {{ est.district }}</div>
+                </td>
+                <td>
+                  <div class="text-blue">{{ est.website }}</div>
+                  <div class="text-xs text-muted">{{ est.email }}</div>
+                </td>
+                <td>{{ est.phone || '9********' }}</td>
+                <td>{{ est.created_at || 'Recién creado' }}</td>
+              </tr>
             </tbody>
           </table>
         </div>

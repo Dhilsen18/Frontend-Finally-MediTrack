@@ -39,7 +39,7 @@ const loadData = async () => {
     establishments.value = data.establishments.map((est, index) => {
       // Priority 1: Specific name match
       let coord = specificCoords[est.establishment_name];
-
+      
       // Priority 2: District/Region match (in name or city_region)
       if (!coord) {
         if (est.establishment_name.includes('Miraflores')) coord = cityCoords['Miraflores'];
@@ -47,7 +47,7 @@ const loadData = async () => {
         else if (est.establishment_name.includes('Vitarte')) coord = cityCoords['Ate Vitarte'];
         else coord = cityCoords[est.city_region] || cityCoords['Lima'];
       }
-
+      
       return {
         ...est,
         lat: coord[0] + (Math.random() - 0.5) * 0.01, // Minimal random for visibility
@@ -83,7 +83,7 @@ const initMap = () => {
 
 const updateMarkers = () => {
   if (!map) return;
-
+  
   // Clear old markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
@@ -94,17 +94,17 @@ const updateMarkers = () => {
   establishments.value.forEach(est => {
     const icon = est.status === 'Operativo' ? blueIcon : orangeIcon;
     const marker = L.marker([est.lat, est.lng], { icon }).addTo(map);
-
+    
     marker.on('click', () => {
       selectedId.value = est.id;
     });
-
+    
     markers.push(marker);
   });
 };
 
-const selectedEst = computed(() =>
-    establishments.value.find(e => e.id === selectedId.value)
+const selectedEst = computed(() => 
+  establishments.value.find(e => e.id === selectedId.value)
 );
 
 function countOperatorsForEstablishment(est) {
@@ -115,7 +115,7 @@ function countOperatorsForEstablishment(est) {
 }
 
 const selectedOperatorCount = computed(() =>
-    selectedEst.value ? countOperatorsForEstablishment(selectedEst.value) : 0
+  selectedEst.value ? countOperatorsForEstablishment(selectedEst.value) : 0
 );
 
 function personnelLabel(count) {
@@ -154,19 +154,19 @@ onMounted(() => {
         <h3>{{ t('establishment.establishments') }}</h3>
         <span class="status-badge">{{ establishments.length }} Sedes</span>
       </div>
-
+      
       <div class="search-box">
         <i class="pi pi-search"></i>
         <input type="text" placeholder="Filtrar establecimientos..." />
       </div>
 
       <div class="list-container custom-scroll">
-        <div
-            v-for="est in establishments"
-            :key="est.id"
-            class="list-item"
-            :class="{ active: selectedId === est.id }"
-            @click="selectEstablishment(est.id)"
+        <div 
+          v-for="est in establishments" 
+          :key="est.id"
+          class="list-item"
+          :class="{ active: selectedId === est.id }"
+          @click="selectEstablishment(est.id)"
         >
           <div class="status-dot" :class="est.status === 'Operativo' ? 'green' : 'orange'"></div>
           <div class="item-meta">
@@ -193,7 +193,7 @@ onMounted(() => {
             <i class="pi pi-map-marker"></i>
             {{ selectedEst.address }}, {{ selectedEst.district }}
           </p>
-
+          
           <div class="card-stats">
             <div class="stat-box">
               <span class="s-label">Estado</span>
@@ -204,8 +204,8 @@ onMounted(() => {
             <div class="stat-box">
               <span class="s-label">Personal</span>
               <span
-                  class="s-value"
-                  :class="{ 'text-muted': selectedOperatorCount === 0 }"
+                class="s-value"
+                :class="{ 'text-muted': selectedOperatorCount === 0 }"
               >{{ personnelLabel(selectedOperatorCount) }}</span>
             </div>
           </div>
