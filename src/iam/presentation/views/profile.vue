@@ -3,13 +3,10 @@ import { ref, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
-import {
-  fetchProfileDemoFromApi,
-  readPlanContext,
-  writePlanContext,
-  apiPlanToCatalogId,
-} from '../../infrastructure/profile-demo.service.js';
+import useIamStore from '../../application/iam.store.js';
+import { apiPlanToCatalogId, readPlanContext, writePlanContext } from '../../application/plan-context.js';
 
+const iamStore = useIamStore();
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
@@ -19,63 +16,66 @@ const error = ref(null);
 const user = ref(null);
 const establishment = ref(null);
 const planApi = ref('BASIC');
-
 const isEditing = ref(false);
-const editForm = ref({
+
+const form = ref({
   name: '',
   email: '',
   phone: '',
   entityName: '',
   jobTitle: '',
+  dni: '',
+  entityCode: '',
 });
 
-const maskedPassword = '••••••••';
-
-const planDisplay = computed(() => String(planApi.value || '').toUpperCase());
-
-const heroName = computed(() => {
-  if (!user.value) return '';
-  return isEditing.value ? editForm.value.name : user.value.name;
+const planDisplay = computed(() => {
+  const api = String(planApi.value || 'BASIC').toUpperCase();
+  const catalog = apiPlanToCatalogId(api);
+  const keyMap = { basic: 'basic', professional: 'pro', pro: 'pro', premium: 'premium' };
+  const localeKey = keyMap[catalog] || 'basic';
+  try {
+    return t(`plansPage.names.${localeKey}`);
+  } catch {
+    return String(api);
+  }
 });
 
-const heroEmail = computed(() => {
-  if (!user.value) return '';
-  return isEditing.value ? editForm.value.email : user.value.email;
+const userInitial = computed(() => (form.value.name?.charAt(0) ?? 'U').toUpperCase());
+const hasPhoto = computed(() => Boolean(user.value?.photo));
+const inputsReadonly = computed(() => !isEditing.value);
+
+const backLabel = computed(() => {
+  const role = localStorage.getItem('userRole');
+  if (role === 'operational-staff') return t('profileView.backToStaffHome');
+  return t('profileView.backToHome');
 });
 
-const establishmentCode = computed(() => {
-  const e = establishment.value;
-  if (!e) return '—';
-  return String(e.id ?? e.admin_id ?? '').padStart(7, '0');
-});
+function syncFormFromUser() {
+  if (!user.value) return;
+  form.value = {
+    name: user.value.name ?? '',
+    email: user.value.email ?? '',
+    phone: user.value.phone ?? '',
+    entityName:
+      establishment.value?.establishment_name ??
+      iamStore.profileEntityName ??
+      '',
+    jobTitle: user.value.job_title ?? '',
+    dni: user.value.dni ?? '',
+    entityCode: iamStore.profileEntityCode ? String(iamStore.profileEntityCode) : '',
+  };
+}
 
 async function loadProfile() {
   loading.value = true;
   error.value = null;
   try {
-    const ctx = readPlanContext();
-    const planFromSession =
-        ctx?.planApiValue != null
-            ? { planApiValue: ctx.planApiValue, benefitsEndDate: ctx.benefitsEndDate }
-            : null;
-
-    const data = await fetchProfileDemoFromApi({
-      persistedUserId: ctx?.userId ?? null,
-      planFromSession,
-    });
-
-    user.value = data.user;
-    establishment.value = data.establishment;
-    planApi.value = data.planApi;
+    await iamStore.loadProfileFromSession();
+    user.value = iamStore.profileUser;
+    establishment.value = iamStore.profileEstablishment;
+    planApi.value = iamStore.profilePlanApi;
     isEditing.value = false;
-
-    writePlanContext({
-      ...(ctx || {}),
-      userId: data.user.id,
-      planApiValue: data.planApi,
-      benefitsEndDate: data.benefitsEndDate,
-      catalogPlanId: apiPlanToCatalogId(data.planApi),
-    });
+    syncFormFromUser();
   } catch (e) {
     console.error(e);
     error.value = t('profileView.loadError');
@@ -86,20 +86,14 @@ async function loadProfile() {
 
 onMounted(loadProfile);
 
-const logout = () => {
-  sessionStorage.removeItem('meditrack_plan_context');
-  localStorage.removeItem('userRole');
-  router.push({ name: 'login' });
-};
-
-const goHome = () => {
+function goHome() {
   const role = localStorage.getItem('userRole');
   if (role === 'health-entity') router.push({ name: 'home-health-entity' });
   else if (role === 'operational-staff') router.push({ name: 'home-operational-staff' });
   else router.push({ name: 'login' });
-};
+}
 
-const goPlans = () => {
+function goPlans() {
   const ctx = readPlanContext() || {};
   writePlanContext({
     ...ctx,
@@ -109,32 +103,26 @@ const goPlans = () => {
     catalogPlanId: apiPlanToCatalogId(planApi.value),
   });
   router.push({ name: 'plans' });
-};
+}
 
-const startEdit = () => {
-  if (!user.value) return;
-  editForm.value = {
-    name: user.value.name ?? '',
-    email: user.value.email ?? '',
-    phone: user.value.phone ?? '',
-    entityName: establishment.value?.establishment_name ?? '',
-    jobTitle: user.value.job_title ?? '',
-  };
+function startEdit() {
+  syncFormFromUser();
   isEditing.value = true;
-};
+}
 
-const cancelEdit = () => {
+function cancelEdit() {
+  syncFormFromUser();
   isEditing.value = false;
-};
+}
 
-const saveEdit = () => {
+function saveEdit() {
   if (!user.value) return;
-  user.value.name = editForm.value.name;
-  user.value.email = editForm.value.email;
-  user.value.phone = editForm.value.phone;
-  user.value.job_title = editForm.value.jobTitle;
+  user.value.name = form.value.name;
+  user.value.email = form.value.email;
+  user.value.phone = form.value.phone;
+  user.value.job_title = form.value.jobTitle;
   if (establishment.value) {
-    establishment.value.establishment_name = editForm.value.entityName;
+    establishment.value.establishment_name = form.value.entityName;
   }
   isEditing.value = false;
   toast.add({
@@ -143,219 +131,242 @@ const saveEdit = () => {
     detail: t('profileView.editSavedDetail'),
     life: 3500,
   });
-};
+}
 </script>
 
 <template>
   <div class="profile-page">
-    <pv-button
-        class="back-fab"
-        icon="pi pi-arrow-left"
-        rounded
-        text
-        severity="secondary"
-        :aria-label="t('profileView.back')"
-        @click="goHome"
-    />
+    <nav v-if="!loading && !error" class="profile-back-bar" aria-label="Navegación">
+      <button type="button" class="profile-back-btn" @click="goHome">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        <span>{{ backLabel }}</span>
+      </button>
+    </nav>
 
-    <div v-if="loading" class="state state--loading">
+    <div v-if="loading" class="profile-card state state--loading">
       <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
       <span>{{ t('profileView.loading') }}</span>
     </div>
 
-    <div v-else-if="error" class="state state--error">
+    <div v-else-if="error" class="profile-card state state--error">
       <p>{{ error }}</p>
-      <pv-button :label="t('profileView.retry')" @click="loadProfile" />
+      <button type="button" class="profile-btn profile-btn--primary" @click="loadProfile">
+        {{ t('profileView.retry') }}
+      </button>
     </div>
 
-    <template v-else-if="user">
+    <div v-else-if="user" class="profile-card">
       <header class="profile-hero">
-        <img
-            class="profile-avatar"
+        <div class="profile-hero__identity">
+          <img
+            v-if="hasPhoto"
+            class="profile-avatar profile-avatar--img"
             :src="user.photo"
-            :alt="heroName"
-            width="72"
-            height="72"
-        />
-        <div class="profile-identity">
-          <h1 class="profile-name">{{ heroName }}</h1>
-          <p class="profile-email">{{ heroEmail }}</p>
+            :alt="form.name"
+            width="52"
+            height="52"
+          />
+          <span
+            v-else
+            class="mt-user-avatar mt-user-avatar--round mt-user-avatar--lg profile-avatar--initial"
+          >{{ userInitial }}</span>
+          <div class="profile-identity">
+            <h1 class="profile-name">{{ form.name }}</h1>
+            <p class="profile-email">{{ form.email }}</p>
+          </div>
         </div>
-        <aside class="sub-card sub-card--schedule" aria-label="schedule">
-          <p class="sub-card__kicker">{{ t('profileView.scheduleTitle') }}</p>
+        <aside class="field-block field-block--schedule" aria-label="schedule">
+          <span class="field-block__label">{{ t('profileView.scheduleTitle') }}</span>
           <table class="schedule-table">
             <thead>
-            <tr>
-              <th>{{ t('profileView.scheduleShift') }}</th>
-              <th>{{ t('profileView.scheduleDay') }}</th>
-            </tr>
+              <tr>
+                <th>{{ t('profileView.scheduleShift') }}</th>
+                <th>{{ t('profileView.scheduleDay') }}</th>
+              </tr>
             </thead>
             <tbody>
-            <tr>
-              <td>{{ t('profileView.scheduleShiftValue') }}</td>
-              <td>{{ t('profileView.scheduleDayValue') }}</td>
-            </tr>
+              <tr>
+                <td>{{ t('profileView.scheduleShiftValue') }}</td>
+                <td>{{ t('profileView.scheduleDayValue') }}</td>
+              </tr>
             </tbody>
           </table>
         </aside>
       </header>
 
-      <!-- Misma lógica visual que las tarjetas de suscripción (plans-selection) -->
       <section class="fields-grid">
-        <article class="sub-card">
-          <p class="sub-card__kicker">{{ t('profileView.name') }}</p>
+        <label class="field-block">
+          <span class="field-block__label">{{ t('profileView.name') }}</span>
           <input
-              v-if="isEditing"
-              v-model="editForm.name"
+            v-model="form.name"
+            type="text"
+            class="field-block__input"
+            :readonly="inputsReadonly"
+            autocomplete="name"
+          />
+        </label>
+
+        <label class="field-block">
+          <span class="field-block__label">{{ t('profileView.entity') }}</span>
+          <input
+            v-model="form.entityName"
+            type="text"
+            class="field-block__input"
+            :readonly="inputsReadonly"
+            autocomplete="organization"
+          />
+        </label>
+
+        <label class="field-block">
+          <span class="field-block__label">{{ t('profileView.dni') }}</span>
+          <input
+            v-model="form.dni"
+            type="text"
+            class="field-block__input field-block__input--readonly"
+            readonly
+          />
+        </label>
+
+        <label class="field-block">
+          <span class="field-block__label">{{ t('profileView.entityCode') }}</span>
+          <input
+            v-model="form.entityCode"
+            type="text"
+            class="field-block__input field-block__input--readonly"
+            readonly
+          />
+        </label>
+
+        <label class="field-block">
+          <span class="field-block__label">{{ t('profileView.email') }}</span>
+          <input
+            v-model="form.email"
+            type="email"
+            class="field-block__input"
+            :readonly="inputsReadonly"
+            autocomplete="email"
+          />
+        </label>
+
+        <label class="field-block">
+          <span class="field-block__label">{{ t('profileView.jobTitle') }}</span>
+          <input
+            v-model="form.jobTitle"
+            type="text"
+            class="field-block__input"
+            :readonly="inputsReadonly"
+            autocomplete="organization-title"
+          />
+        </label>
+
+        <label class="field-block">
+          <span class="field-block__label">{{ t('profileView.phone') }}</span>
+          <input
+            v-model="form.phone"
+            type="tel"
+            class="field-block__input"
+            :readonly="inputsReadonly"
+            autocomplete="tel"
+          />
+        </label>
+
+        <label class="field-block">
+          <span class="field-block__label">{{ t('profileView.password') }}</span>
+          <input
+            type="text"
+            class="field-block__input field-block__input--readonly"
+            value="••••••••"
+            readonly
+          />
+        </label>
+
+        <div class="field-block field-block--plan">
+          <span class="field-block__label">{{ t('profileView.actualPlan') }}</span>
+          <div class="plan-row">
+            <input
               type="text"
-              class="sub-card__input"
-              autocomplete="name"
-          />
-          <p v-else class="sub-card__value">{{ user.name }}</p>
-        </article>
-
-        <article class="sub-card">
-          <p class="sub-card__kicker">{{ t('profileView.entity') }}</p>
-          <textarea
-              v-if="isEditing"
-              v-model="editForm.entityName"
-              class="sub-card__input sub-card__input--area"
-              rows="2"
-              autocomplete="organization"
-          />
-          <p v-else class="sub-card__value sub-card__value--multiline">{{ establishment?.establishment_name ?? '—' }}</p>
-        </article>
-
-        <article class="sub-card">
-          <p class="sub-card__kicker">{{ t('profileView.dni') }}</p>
-          <p class="sub-card__value sub-card__value--secondary">{{ user.dni }}</p>
-        </article>
-
-        <article class="sub-card">
-          <p class="sub-card__kicker">{{ t('profileView.entityCode') }}</p>
-          <p class="sub-card__value sub-card__value--secondary">{{ establishmentCode }}</p>
-        </article>
-
-        <article class="sub-card">
-          <p class="sub-card__kicker">{{ t('profileView.email') }}</p>
-          <input
-              v-if="isEditing"
-              v-model="editForm.email"
-              type="email"
-              class="sub-card__input"
-              autocomplete="email"
-          />
-          <p v-else class="sub-card__value">{{ user.email }}</p>
-        </article>
-
-        <article class="sub-card">
-          <p class="sub-card__kicker">{{ t('profileView.jobTitle') }}</p>
-          <input
-              v-if="isEditing"
-              v-model="editForm.jobTitle"
-              type="text"
-              class="sub-card__input"
-              autocomplete="organization-title"
-          />
-          <p v-else class="sub-card__value">{{ user.job_title }}</p>
-        </article>
-
-        <article class="sub-card">
-          <p class="sub-card__kicker">{{ t('profileView.phone') }}</p>
-          <input
-              v-if="isEditing"
-              v-model="editForm.phone"
-              type="tel"
-              class="sub-card__input"
-              autocomplete="tel"
-          />
-          <p v-else class="sub-card__value">{{ user.phone }}</p>
-        </article>
-
-        <article class="sub-card">
-          <p class="sub-card__kicker">{{ t('profileView.password') }}</p>
-          <p class="sub-card__value sub-card__value--mono">{{ maskedPassword }}</p>
-        </article>
-
-        <article class="sub-card sub-card--plan">
-          <p class="sub-card__kicker">{{ t('profileView.actualPlan') }}</p>
-          <div class="plan-inline">
-            <p class="sub-card__value sub-card__value--plan">{{ planDisplay }}</p>
-            <pv-button
-                class="btn-update btn-update--compact"
-                :label="t('profileView.update')"
-                icon="pi pi-sync"
-                size="small"
-                @click="goPlans"
+              class="field-block__input field-block__input--plan"
+              :value="planDisplay"
+              readonly
             />
+            <button type="button" class="profile-btn profile-btn--plan" @click="goPlans">
+              <i class="pi pi-credit-card" aria-hidden="true"></i>
+              <span>{{ t('profileView.updatePlan') }}</span>
+            </button>
           </div>
-        </article>
+        </div>
       </section>
 
-      <div class="toolbar-actions">
+      <footer class="toolbar-actions">
         <template v-if="!isEditing">
-          <pv-button
-              class="btn-edit"
-              :label="t('profileView.edit')"
-              icon="pi pi-pencil"
-              size="small"
-              @click="startEdit"
-          />
+          <button type="button" class="profile-btn profile-btn--edit" @click="startEdit">
+            <i class="pi pi-user-edit" aria-hidden="true"></i>
+            <span>{{ t('profileView.edit') }}</span>
+          </button>
         </template>
         <template v-else>
-          <pv-button
-              class="btn-save"
-              :label="t('profileView.save')"
-              icon="pi pi-check"
-              size="small"
-              @click="saveEdit"
-          />
-          <pv-button
-              :label="t('profileView.cancelEdit')"
-              severity="secondary"
-              outlined
-              size="small"
-              @click="cancelEdit"
-          />
+          <button type="button" class="profile-btn profile-btn--primary" @click="saveEdit">
+            <i class="pi pi-check" aria-hidden="true"></i>
+            <span>{{ t('profileView.save') }}</span>
+          </button>
+          <button type="button" class="profile-btn profile-btn--ghost" @click="cancelEdit">
+            <span>{{ t('profileView.cancelEdit') }}</span>
+          </button>
         </template>
-        <pv-button
-            class="btn-return"
-            :label="t('profileView.return')"
-            icon="pi pi-arrow-left"
-            severity="secondary"
-            outlined
-            size="small"
-            @click="goHome"
-        />
-      </div>
-
-      <footer class="profile-footer">
-        <pv-button
-            :label="t('iam.logout')"
-            icon="pi pi-sign-out"
-            severity="danger"
-            size="small"
-            @click="logout"
-        />
       </footer>
-    </template>
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* Perfil compacto tipo panel administrativo */
 .profile-page {
-  position: relative;
-  max-width: 920px;
+  width: 100%;
+  max-width: 880px;
   margin: 0 auto;
-  padding: 0 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.back-fab {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
+.profile-back-bar {
+  background: #fff;
+  border: 1px solid var(--mt-border);
+  border-radius: 14px;
+  padding: 0.55rem 0.75rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.profile-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--mt-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.profile-back-btn:hover {
+  background: var(--mt-primary-soft);
+  color: var(--mt-primary-hover);
+}
+
+.profile-back-btn i {
+  font-size: 0.8rem;
+}
+
+.profile-card {
+  background: #fff;
+  border-radius: 22px;
+  border: 1px solid var(--mt-border);
+  box-shadow: 0 10px 36px rgba(15, 23, 42, 0.07);
+  padding: 1.65rem 1.75rem 1.35rem;
 }
 
 .state {
@@ -364,9 +375,9 @@ const saveEdit = () => {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  min-height: 200px;
-  color: #64748b;
-  font-size: 0.9rem;
+  min-height: 180px;
+  color: var(--mt-text-muted);
+  font-size: 0.875rem;
 }
 
 .state--error {
@@ -374,262 +385,244 @@ const saveEdit = () => {
 }
 
 .profile-hero {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 1rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  margin-bottom: 1.25rem;
-  padding: 0.75rem 0 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.15rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mt-border);
 }
 
-.profile-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+.profile-hero__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .profile-identity {
   min-width: 0;
 }
 
+.profile-avatar {
+  flex-shrink: 0;
+}
+
+.profile-avatar--img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
+}
+
 .profile-name {
-  margin: 0 0 0.2rem;
-  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  margin: 0 0 0.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--mt-heading);
   letter-spacing: -0.02em;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .profile-email {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.78rem;
   font-weight: 500;
-  color: #64748b;
+  color: var(--mt-text-muted);
   line-height: 1.35;
-}
-
-.sub-card {
-  position: relative;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0.65rem 0.85rem 0.7rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  min-height: 0;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.sub-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-}
-
-.sub-card--schedule {
-  padding: 0.65rem 0.85rem;
-  max-width: 17rem;
-}
-
-.sub-card--plan {
-  grid-column: 1 / -1;
-  padding: 0.65rem 1rem;
-}
-
-.sub-card__kicker {
-  margin: 0;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #94a3b8;
-  line-height: 1.2;
-}
-
-.sub-card__value {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1.4;
-  color: #0f172a;
-  letter-spacing: -0.01em;
-  word-break: break-word;
-}
-
-.sub-card__value--multiline {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.sub-card__value--secondary {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.sub-card__value--mono {
-  font-family: ui-monospace, monospace;
-  font-size: 0.875rem;
-  letter-spacing: 0.08em;
-  color: #64748b;
-}
-
-.sub-card__value--plan {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.sub-card__input {
-  width: 100%;
-  margin: 0;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #0f172a;
-  background: #fafafa;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
-.sub-card__input:focus {
-  outline: none;
-  border-color: #94a3b8;
-  background: #fff;
-  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.25);
-}
-
-.sub-card__input--area {
-  min-height: 3.25rem;
-  resize: vertical;
-  line-height: 1.4;
-  font-weight: 500;
 }
 
 .fields-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  align-items: stretch;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 1.15rem;
 }
 
-.plan-inline {
+.field-block {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.65rem;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
-.plan-inline .sub-card__value--plan {
-  flex: 1 1 120px;
+.field-block--schedule {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--mt-border);
+  border-radius: 12px;
+  background: #f8fafc;
+  min-width: min(100%, 14.5rem);
+}
+
+.field-block--plan {
+  grid-column: 1 / -1;
+}
+
+.field-block__label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--mt-text-muted);
+}
+
+.field-block__input {
+  width: 100%;
   margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--mt-border);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--mt-heading);
+  background: #fff;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.btn-update--compact {
-  flex-shrink: 0;
+.field-block__input:focus {
+  outline: none;
+  border-color: var(--mt-primary);
+  box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1);
+}
+
+.field-block__input:read-only,
+.field-block__input--readonly {
+  background: #f8fafc;
+  color: #475569;
+  cursor: default;
+}
+
+.field-block__input--plan {
+  flex: 1;
+  font-weight: 600;
+  color: var(--mt-primary);
+}
+
+.plan-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .toolbar-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--mt-border);
+}
+
+.profile-btn {
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 1.25rem;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.profile-btn i {
+  font-size: 0.85rem;
+}
+
+.profile-btn--primary {
+  background: linear-gradient(180deg, #2563eb, var(--mt-primary));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25);
+}
+
+.profile-btn--edit {
+  background: linear-gradient(180deg, #2563eb, var(--mt-primary));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25);
+}
+
+.profile-btn--plan {
+  background: #fff;
+  color: var(--mt-accent);
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.profile-btn--plan:hover {
+  background: var(--mt-accent-soft);
+  transform: translateY(-1px);
+}
+
+.profile-btn--primary:hover,
+.profile-btn--edit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.profile-btn--ghost {
+  background: #fff;
+  color: var(--mt-text-muted);
+  border: 1px solid var(--mt-border);
+}
+
+.profile-btn--ghost:hover {
+  background: #f8fafc;
+  color: var(--mt-heading);
 }
 
 .schedule-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
 }
 
 .schedule-table th {
   text-align: left;
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #94a3b8;
-  padding: 0 0.4rem 0.2rem 0;
+  color: var(--mt-text-muted);
+  padding: 0 0.35rem 0.15rem 0;
 }
 
 .schedule-table td {
   color: #475569;
   font-weight: 600;
-  font-size: 0.75rem;
-  padding: 0.15rem 0.4rem 0 0;
-  vertical-align: top;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem 0 0;
 }
 
-.btn-edit {
-  background: #ea580c !important;
-  border-color: #ea580c !important;
-}
-
-.btn-save {
-  background: #ea580c !important;
-  border-color: #ea580c !important;
-}
-
-.btn-update {
-  background: #ea580c !important;
-  border-color: #ea580c !important;
-}
-
-.btn-return {
-  color: #1e3a8a !important;
-  border-color: #cbd5e1 !important;
-}
-
-.profile-footer {
-  display: flex;
-  justify-content: center;
-  padding-top: 0.85rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.profile-footer :deep(.p-button) {
-  font-size: 0.875rem;
-}
-
-@media (max-width: 900px) {
-  .profile-hero {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .profile-avatar {
-    margin: 0 auto;
-  }
-
-  .sub-card--schedule {
-    max-width: none;
+@media (max-width: 640px) {
+  .profile-card {
+    padding: 1rem;
+    border-radius: 16px;
   }
 
   .fields-grid {
     grid-template-columns: 1fr;
   }
 
-  .sub-card--plan {
+  .field-block--plan {
     grid-column: auto;
   }
 
-  .plan-inline {
+  .plan-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .btn-update--compact {
+  .profile-btn {
     width: 100%;
   }
 }

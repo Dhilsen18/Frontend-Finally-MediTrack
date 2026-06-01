@@ -29,9 +29,9 @@ const selectRole = (roleId) => {
   localStorage.setItem('userRole', roleId);
 
   if (roleId === 'health-entity') {
-    router.push({ name: 'home-health-entity' });
+    router.push({ name: 'iam-login-health-entity' });
   } else if (roleId === 'operational-staff') {
-    router.push({ name: 'home-operational-staff' });
+    router.push({ name: 'iam-login-operational-staff' });
   }
 };
 </script>
