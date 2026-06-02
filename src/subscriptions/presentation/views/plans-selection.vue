@@ -16,6 +16,7 @@ import {
 import useIamStore from '../../../iam/application/iam.store.js';
 import MtConfirmDialog from '../../../shared/presentation/components/mt-confirm-dialog.vue';
 import { onBeforeRouteLeave } from 'vue-router';
+import '../styles/plans-shared.css';
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -192,7 +193,7 @@ const selectPlan = (catalogId) => {
 </script>
 
 <template>
-  <div class="plans-page">
+  <div class="plans-page plans-selection">
     <nav class="plans-back-bar" aria-label="Navegación">
       <button type="button" class="plans-back-btn" @click="backToProfile">
         <i class="pi pi-arrow-left" aria-hidden="true"></i>
@@ -310,204 +311,12 @@ const selectPlan = (catalogId) => {
   font-size: 0.8rem;
 }
 
-.plans-card {
-  background: #fff;
-  border-radius: 22px;
-  border: 1px solid var(--mt-border);
-  box-shadow: 0 10px 36px rgba(15, 23, 42, 0.07);
-  padding: 1.65rem 1.75rem 1.75rem;
-}
-
-.plans-head {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.15rem;
-  border-bottom: 1px solid var(--mt-border);
-}
-
-.plans-title {
-  margin: 0;
-  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
-  font-weight: 800;
-  color: var(--mt-heading);
-  letter-spacing: -0.03em;
-}
-
-.plans-subtitle {
-  margin: 0.45rem 0 0;
-  font-size: 0.875rem;
-  color: var(--mt-text-muted);
-  line-height: 1.45;
-}
-
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  align-items: stretch;
-}
-
-.plan-card {
-  position: relative;
-  background: #f8fafc;
-  border: 1px solid var(--mt-border);
-  border-radius: 16px;
-  padding: 1.35rem 1.2rem 1.2rem;
+.plans-selection .plan-card {
   min-height: 26rem;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.plan-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-.plan-card--recommended {
-  background: #fff;
-  border-color: var(--mt-accent);
-  box-shadow: 0 8px 28px rgba(13, 148, 136, 0.12);
-}
-
-.plan-card--current {
-  border-color: var(--mt-primary);
-  box-shadow: 0 8px 28px rgba(30, 58, 138, 0.1);
-}
-
-.badge-rec {
-  position: absolute;
-  top: 0.85rem;
-  right: 0.85rem;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #fff;
-  background: var(--mt-accent);
-  padding: 0.3rem 0.6rem;
-  border-radius: 999px;
-}
-
-.plan-name {
-  margin: 0 0 0.3rem;
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--mt-heading);
-}
-
-.plan-price {
-  margin: 0 0 0.65rem;
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--mt-primary);
-  letter-spacing: -0.02em;
-}
-
-.plan-desc {
-  margin: 0 0 0.85rem;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: var(--mt-text-muted);
-}
-
-.plan-features {
-  list-style: none;
-  margin: 0 0 1rem;
-  padding: 0;
-  flex: 1;
-}
-
-.plan-features li {
-  display: flex;
-  gap: 0.45rem;
-  align-items: flex-start;
-  font-size: 0.78rem;
-  margin-bottom: 0.4rem;
-  line-height: 1.35;
-}
-
-.plan-features li.ok {
-  color: #15803d;
-}
-
-.plan-features li.no {
-  color: #94a3b8;
-}
-
-.plan-features li i {
-  margin-top: 0.08rem;
-  font-size: 0.78rem;
-  flex-shrink: 0;
-}
-
-.plan-actions {
-  margin-top: auto;
-}
-
-.plan-btn {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0.6rem 0.85rem;
-  border-radius: 10px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.plan-btn:hover {
-  transform: translateY(-1px);
-}
-
-.plan-btn--primary {
-  background: linear-gradient(180deg, #2563eb, var(--mt-primary));
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.22);
-}
-
-.plan-btn--primary:hover {
-  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.28);
-}
-
-.plan-btn--ghost {
-  background: #fff;
-  color: var(--mt-primary);
-  border: 1px solid var(--mt-border);
-}
-
-.plan-btn--ghost:hover {
-  background: var(--mt-primary-soft);
-}
-
-.plan-btn--danger {
-  background: #dc2626;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
-}
-
-.plan-btn--danger:hover {
-  background: #b91c1c;
 }
 
 @media (max-width: 960px) {
-  .plans-card {
-    padding: 1.25rem 1rem 1.35rem;
-    border-radius: 18px;
-  }
-
-  .plans-grid {
-    grid-template-columns: 1fr;
-    max-width: 420px;
-    margin: 0 auto;
-  }
-
-  .plan-card {
+  .plans-selection .plan-card {
     min-height: auto;
   }
 }
