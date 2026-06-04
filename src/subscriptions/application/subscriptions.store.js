@@ -86,6 +86,27 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
         });
     }
 
+    // ── Plan context (sessionStorage) ─────────────────────────────────────────
+
+    const PLAN_CONTEXT_KEY = 'meditrack_plan_context';
+
+    function readPlanContext() {
+        try {
+            const raw = sessionStorage.getItem(PLAN_CONTEXT_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function writePlanContext(ctx) {
+        sessionStorage.setItem(PLAN_CONTEXT_KEY, JSON.stringify(ctx));
+    }
+
+    function apiPlanToCatalogId(apiPlan) {
+        return Subscription.apiPlanToCatalogId(apiPlan);
+    }
+
     return {
         subscriptions,
         errors,
@@ -97,6 +118,9 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
         addSubscription,
         updateSubscription,
         deleteSubscription,
+        readPlanContext,
+        writePlanContext,
+        apiPlanToCatalogId,
     };
 });
 

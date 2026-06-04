@@ -1,8 +1,6 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import '../../../establishment/presentation/styles/establishment-flow.css';
-import '../styles/mt-confirm-dialog.css';
 
 const visible = defineModel('visible', { type: Boolean, default: false });
 

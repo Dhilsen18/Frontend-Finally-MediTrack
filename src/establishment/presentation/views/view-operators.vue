@@ -2,16 +2,9 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { fetchDashboardPayload } from '../../../shared/presentation/composables/use-dashboard-payload.js';
-import { readAuthSession } from '../../../iam/application/auth-session.js';
-import {
-  getAssignedOperatorsForAdmin,
-  getPendingOperatorUsers,
-  normalizeId,
-} from '../../application/operator-roster.js';
-import { formatScheduleSummary } from '../../application/operator-schedule.js';
-import '../styles/establishment-flow.css';
-import '../../../monitoring/presentation/styles/monitoring-flow.css';
+import { fetchDashboardPayload } from '../../../shared/infrastructure/dashboard-payload.js';
+import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
+import { Operator } from '../../domain/model/operator.entity.js';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -39,7 +32,7 @@ onMounted(async () => {
 
 const scopedOperators = computed(() => {
   if (!session.value?.adminId) return operators.value;
-  return getAssignedOperatorsForAdmin({
+  return Operator.getAssignedForAdmin({
     operators: operators.value,
     establishments: establishments.value,
     adminId: session.value.adminId,
@@ -49,7 +42,7 @@ const scopedOperators = computed(() => {
 const pendingUsers = computed(() => {
   const code = session.value?.entityCode;
   if (!code) return [];
-  return getPendingOperatorUsers({
+  return Operator.getPendingUsers({
     users: users.value,
     operators: operators.value,
     entityCode: code,
@@ -57,13 +50,13 @@ const pendingUsers = computed(() => {
 });
 
 function getUserById(userId) {
-  const id = normalizeId(userId);
-  return users.value.find((u) => normalizeId(u.id) === id) ?? { name: t('establishment.unknownUser'), email: '—' };
+  const id = Operator.normalizeId(userId);
+  return users.value.find((u) => Operator.normalizeId(u.id) === id) ?? { name: t('establishment.unknownUser'), email: '—' };
 }
 
 function getEstablishmentName(establishmentId) {
   if (establishmentId == null) return t('establishment.unassignedSite');
-  const est = establishments.value.find((e) => normalizeId(e.id) === normalizeId(establishmentId));
+  const est = establishments.value.find((e) => Operator.normalizeId(e.id) === Operator.normalizeId(establishmentId));
   return est?.establishment_name ?? '—';
 }
 
@@ -76,7 +69,7 @@ const tableRows = computed(() => {
       operator: op,
       user,
       name: user.name,
-      schedule: formatScheduleSummary(op.schedule),
+      schedule: Operator.formatSchedule(op.schedule),
       alerts: op.alerts_answered ?? 0,
       establishment: getEstablishmentName(op.establishment_id),
     };

@@ -4,8 +4,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import AuthPanel from '../components/auth-panel.vue';
-import { loginHealthEntity } from '../../application/auth.service.js';
-import '../styles/auth-register-compact.css';
+import { loginHealthEntity } from '../../infrastructure/auth.service.js';
 
 const { t } = useI18n();
 const router = useRouter();

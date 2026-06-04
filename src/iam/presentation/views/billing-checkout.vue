@@ -4,9 +4,8 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import AuthPanel from '../components/auth-panel.vue';
-import { completeHealthEntityRegistration } from '../../application/auth.service.js';
-import { readPendingPlan, readPendingRegistration } from '../../application/auth-session.js';
-import '../styles/auth-register-compact.css';
+import { completeHealthEntityRegistration } from '../../infrastructure/auth.service.js';
+import { readPendingPlan, readPendingRegistration } from '../../infrastructure/auth-session.js';
 
 const { t } = useI18n();
 const router = useRouter();

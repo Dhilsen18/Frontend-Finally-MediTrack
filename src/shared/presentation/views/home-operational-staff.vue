@@ -2,9 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { readAuthSession } from '../../../iam/application/auth-session.js';
-import '../../../establishment/presentation/styles/establishment-flow.css';
-import '../styles/home-dashboard.css';
+import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
 
 const { t } = useI18n();
 const router = useRouter();

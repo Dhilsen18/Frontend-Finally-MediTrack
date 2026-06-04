@@ -6,8 +6,6 @@ import { useToast } from 'primevue/usetoast';
 import useMonitoringStore from '../../application/monitoring.store.js';
 import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 import { getNextMockDeviceId } from '../../../shared/infrastructure/mocks/mock-database.js';
-import '../../../establishment/presentation/styles/establishment-flow.css';
-import '../styles/monitoring-flow.css';
 
 const monitoringStore = useMonitoringStore();
 const router = useRouter();

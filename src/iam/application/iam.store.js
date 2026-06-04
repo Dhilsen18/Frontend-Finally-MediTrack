@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { IamApi } from '../infrastructure/iam-api.js';
 import { UserAssembler } from '../infrastructure/user.assembler.js';
 import { AdminAssembler } from '../infrastructure/admin.assembler.js';
-import { readAuthSession } from './auth-session.js';
+import { readAuthSession } from '../infrastructure/auth-session.js';
 import { isMockMode } from '../../shared/infrastructure/mocks/mock-config.js';
 import { MockApi } from '../../shared/infrastructure/mocks/mock-api.service.js';
 import { mockDb } from '../../shared/infrastructure/mocks/mock-database.js';

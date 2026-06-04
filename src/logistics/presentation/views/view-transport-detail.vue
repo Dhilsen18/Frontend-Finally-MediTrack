@@ -3,7 +3,6 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import useLogisticsStore from '../../application/logistics.store.js';
-import '../../../establishment/presentation/styles/establishment-flow.css';
 
 const route = useRoute();
 const router = useRouter();

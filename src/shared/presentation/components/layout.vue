@@ -3,8 +3,8 @@ import LanguageSwitcher from './language-switcher.vue';
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
-import { readAuthSession } from '../../../iam/application/auth-session.js';
-import { logout as authLogout } from '../../../iam/application/auth.service.js';
+import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
+import { logout as authLogout } from '../../../iam/infrastructure/auth.service.js';
 
 const { t } = useI18n();
 const router = useRouter();

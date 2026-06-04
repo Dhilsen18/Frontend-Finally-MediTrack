@@ -2,9 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { fetchDashboardPayload } from '../../../shared/presentation/composables/use-dashboard-payload.js';
-import { formatScheduleSummary } from '../../application/operator-schedule.js';
-import '../styles/establishment-flow.css';
+import { fetchDashboardPayload } from '../../../shared/infrastructure/dashboard-payload.js';
+import { Operator } from '../../domain/model/operator.entity.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -70,7 +69,7 @@ const scheduleRows = computed(() => {
       day: row.day || row.hours || row.range || '—',
     }));
   }
-  return [{ turn: t('establishment.scheduleShift'), day: formatScheduleSummary(sch) }];
+  return [{ turn: t('establishment.scheduleShift'), day: Operator.formatSchedule(sch) }];
 });
 
 const entryDate = computed(() => {

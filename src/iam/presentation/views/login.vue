@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import LanguageSwitcher from '../components/language-switcher.vue';
+import LanguageSwitcher from '../../../shared/presentation/components/language-switcher.vue';
 
 const { t } = useI18n();
 const router = useRouter();

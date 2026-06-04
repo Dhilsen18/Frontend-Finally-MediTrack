@@ -2,8 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { fetchDashboardPayload } from '../../../shared/presentation/composables/use-dashboard-payload.js';
-import '../styles/establishment-flow.css';
+import { fetchDashboardPayload } from '../../../shared/infrastructure/dashboard-payload.js';
 
 const route = useRoute();
 const router = useRouter();

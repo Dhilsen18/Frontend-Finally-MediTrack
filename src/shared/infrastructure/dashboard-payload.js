@@ -4,11 +4,11 @@
  *
  * @module use-dashboard-payload
  */
-import useIamStore from '../../../iam/application/iam.store.js';
-import useSubscriptionsStore from '../../../subscriptions/application/subscriptions.store.js';
-import useEstablishmentStore from '../../../establishment/application/establishment.store.js';
-import useMonitoringStore from '../../../monitoring/application/monitoring.store.js';
-import useLogisticsStore from '../../../logistics/application/logistics.store.js';
+import useIamStore from '../../iam/application/iam.store.js';
+import useSubscriptionsStore from '../../subscriptions/application/subscriptions.store.js';
+import useEstablishmentStore from '../../establishment/application/establishment.store.js';
+import useMonitoringStore from '../../monitoring/application/monitoring.store.js';
+import useLogisticsStore from '../../logistics/application/logistics.store.js';
 
 function entitiesToPlain(entities) {
     return (entities || []).map((e) => ({ ...e }));

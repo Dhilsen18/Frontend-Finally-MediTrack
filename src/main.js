@@ -1,6 +1,5 @@
 import { createApp } from 'vue'
 import './style.css'
-import './shared/presentation/styles/mt-confirm-dialog.css'
 import App from './app.vue'
 import PrimeVue from 'primevue/config';
 import Material from '@primeuix/themes/material';

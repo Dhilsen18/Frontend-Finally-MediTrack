@@ -3,20 +3,15 @@ import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
-import {
-  readPlanContext,
-  writePlanContext,
-  apiPlanToCatalogId,
-  catalogIdToApiPlan,
-} from '../../application/plan-context.js';
+import useSubscriptionsStore from '../../application/subscriptions.store.js';
+import { Subscription } from '../../domain/model/subscription.entity.js';
 import {
   readAuthSession,
   writeAuthSession,
-} from '../../../iam/application/auth-session.js';
+} from '../../../iam/infrastructure/auth-session.js';
 import useIamStore from '../../../iam/application/iam.store.js';
 import MtConfirmDialog from '../../../shared/presentation/components/mt-confirm-dialog.vue';
 import { onBeforeRouteLeave } from 'vue-router';
-import '../styles/plans-shared.css';
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -26,6 +21,7 @@ const currentCatalogId = ref('basic');
 const benefitsEndDate = ref(null);
 const cancelOpen = ref(false);
 const iamStore = useIamStore();
+const subscriptionsStore = useSubscriptionsStore();
 
 const planDefs = computed(() => [
   {
@@ -75,11 +71,11 @@ const planDefs = computed(() => [
 ]);
 
 function syncFromSession() {
-  const ctx = readPlanContext();
+  const ctx = subscriptionsStore.readPlanContext();
   if (ctx?.catalogPlanId) {
     currentCatalogId.value = ctx.catalogPlanId;
   } else if (ctx?.planApiValue) {
-    currentCatalogId.value = apiPlanToCatalogId(ctx.planApiValue);
+    currentCatalogId.value = Subscription.apiPlanToCatalogId(ctx.planApiValue);
   }
   benefitsEndDate.value = ctx?.benefitsEndDate ?? null;
 }
@@ -122,8 +118,8 @@ const confirmCancel = () => {
   const end = new Date();
   end.setMonth(end.getMonth() + 1);
   const iso = end.toISOString().slice(0, 10);
-  const ctx = readPlanContext() || {};
-  writePlanContext({
+  const ctx = subscriptionsStore.readPlanContext() || {};
+  subscriptionsStore.writePlanContext({
     ...ctx,
     planApiValue: 'BASIC',
     catalogPlanId: 'basic',
@@ -162,12 +158,12 @@ const selectPlan = (catalogId) => {
     });
     return;
   }
-  const apiVal = catalogIdToApiPlan(catalogId);
+  const apiVal = Subscription.catalogIdToApiPlan(catalogId);
   const end = new Date();
   end.setFullYear(end.getFullYear() + 1);
   const iso = end.toISOString().slice(0, 10);
-  const ctx = readPlanContext() || {};
-  writePlanContext({
+  const ctx = subscriptionsStore.readPlanContext() || {};
+  subscriptionsStore.writePlanContext({
     ...ctx,
     planApiValue: apiVal,
     catalogPlanId: catalogId,

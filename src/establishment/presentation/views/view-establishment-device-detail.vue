@@ -2,10 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { fetchDashboardPayload } from '../../../shared/presentation/composables/use-dashboard-payload.js';
-import { useLiveSensorReadings } from '../../../monitoring/application/use-live-sensor-readings.js';
+import { fetchDashboardPayload } from '../../../shared/infrastructure/dashboard-payload.js';
 import SensorReadingsGrid from '../../../monitoring/presentation/components/sensor-readings-grid.vue';
-import '../styles/establishment-flow.css';
 
 const route = useRoute();
 const router = useRouter();
@@ -15,7 +13,6 @@ const loading = ref(true);
 const establishment = ref(null);
 const device = ref(null);
 
-const { metrics, regularize } = useLiveSensorReadings(device, { labelPrefix: 'establishment' });
 
 function sameEst(a, b) {
   return Number(a) === Number(b) || String(a) === String(b);
@@ -115,7 +112,7 @@ const medType = computed(() => {
 
       <h2 class="est-flow-section-title">{{ t('establishment.sensorReadings') }}</h2>
       <p class="est-flow-live-hint">{{ t('establishment.sensorLiveHint') }}</p>
-      <SensorReadingsGrid :metrics="metrics" @regularize="regularize" />
+      <SensorReadingsGrid :device="device" label-prefix="establishment" />
 
       <footer class="est-flow-actions">
         <button type="button" class="est-flow-btn est-flow-btn--ghost" @click="goTeam">

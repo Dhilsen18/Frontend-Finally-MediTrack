@@ -10,8 +10,7 @@ import {
     readPendingPlan,
     writePendingPlan,
 } from './auth-session.js';
-import { catalogIdToApiPlan } from '../../subscriptions/application/plan-catalog.js';
-import { validatePaymentFields } from './payment.validator.js';
+import { Subscription } from '../../subscriptions/domain/model/subscription.entity.js';
 import { isMockMode } from '../../shared/infrastructure/mocks/mock-config.js';
 import { findMockUserByEmail, mockDb } from '../../shared/infrastructure/mocks/mock-database.js';
 
@@ -132,13 +131,13 @@ export async function startHealthEntityRegistration(form) {
 export function saveRegistrationPlan(catalogPlanId) {
     writePendingPlan({
         catalogPlanId,
-        planApiValue: catalogIdToApiPlan(catalogPlanId),
+        planApiValue: Subscription.catalogIdToApiPlan(catalogPlanId),
         flow: 'registration',
     });
 }
 
 export async function completeHealthEntityRegistration(payment) {
-    const validation = validatePaymentFields(payment);
+    const validation = Subscription.validatePayment(payment);
     if (!validation.valid) {
         return { ok: false, errors: validation.errors };
     }

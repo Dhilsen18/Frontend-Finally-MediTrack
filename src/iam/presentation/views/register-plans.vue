@@ -4,10 +4,9 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import AuthPanel from '../components/auth-panel.vue';
-import { saveRegistrationPlan } from '../../application/auth.service.js';
-import { readPendingRegistration } from '../../application/auth-session.js';
-import { PLAN_CATALOG_ORDER, getPlanByCatalogId } from '../../../subscriptions/application/plan-catalog.js';
-import '../../../subscriptions/presentation/styles/plans-shared.css';
+import { saveRegistrationPlan } from '../../infrastructure/auth.service.js';
+import { readPendingRegistration } from '../../infrastructure/auth-session.js';
+import { Subscription } from '../../../subscriptions/domain/model/subscription.entity.js';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -20,8 +19,8 @@ onMounted(() => {
 });
 
 const plans = computed(() =>
-  PLAN_CATALOG_ORDER.map((id) => {
-    const def = getPlanByCatalogId(id);
+  Subscription.PLAN_CATALOG_ORDER.map((id) => {
+    const def = Subscription.getPlanByCatalogId(id);
     const limits = def.limits;
     return {
       id,

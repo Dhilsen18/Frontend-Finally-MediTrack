@@ -6,8 +6,6 @@ import { useToast } from 'primevue/usetoast';
 import useLogisticsStore from '../../application/logistics.store.js';
 import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 import { getNextMockTransportId } from '../../../shared/infrastructure/mocks/mock-database.js';
-import '../../../establishment/presentation/styles/establishment-flow.css';
-import '../../../monitoring/presentation/styles/monitoring-flow.css';
 
 const logisticsStore = useLogisticsStore();
 const router = useRouter();

@@ -3,8 +3,6 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import useMonitoringStore from '../../application/monitoring.store.js';
-import '../../../establishment/presentation/styles/establishment-flow.css';
-import '../styles/monitoring-flow.css';
 
 const monitoringStore = useMonitoringStore();
 const router = useRouter();

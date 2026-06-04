@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Layout from "./shared/presentation/components/layout.vue";
-import Login from "./shared/presentation/views/login.vue";
+import Login from "./iam/presentation/views/login.vue";
 import Home from "./shared/presentation/views/home.vue";
 import HomeHealthEntity from "./shared/presentation/views/home-health-entity.vue";
 import HomeOperationalStaff from "./shared/presentation/views/home-operational-staff.vue";

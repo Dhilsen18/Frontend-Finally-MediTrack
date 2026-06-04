@@ -2,11 +2,9 @@
 import { useI18n } from 'vue-i18n';
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { readAuthSession } from '../../../iam/application/auth-session.js';
+import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
 import ControlCenterPanel from '../../../monitoring/presentation/components/control-center-panel.vue';
-import { fetchDashboardData } from '../../infrastructure/services/dashboard.service.js';
-import '../../../establishment/presentation/styles/establishment-flow.css';
-import '../styles/home-dashboard.css';
+import { fetchDashboardPayload as fetchDashboardData } from '../../infrastructure/dashboard-payload.js';
 
 const { t } = useI18n();
 const router = useRouter();

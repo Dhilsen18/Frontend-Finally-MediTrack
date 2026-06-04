@@ -16,7 +16,6 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Radar, Bar, Doughnut } from 'vue-chartjs';
-import '../../../establishment/presentation/styles/establishment-flow.css';
 
 ChartJS.register(
     Title,

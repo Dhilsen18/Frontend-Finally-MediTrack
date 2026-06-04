@@ -4,9 +4,11 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import useIamStore from '../../application/iam.store.js';
-import { apiPlanToCatalogId, readPlanContext, writePlanContext } from '../../application/plan-context.js';
+import useSubscriptionsStore from '../../../subscriptions/application/subscriptions.store.js';
+import { Subscription } from '../../../subscriptions/domain/model/subscription.entity.js';
 
 const iamStore = useIamStore();
+const subscriptionsStore = useSubscriptionsStore();
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
@@ -30,7 +32,7 @@ const form = ref({
 
 const planDisplay = computed(() => {
   const api = String(planApi.value || 'BASIC').toUpperCase();
-  const catalog = apiPlanToCatalogId(api);
+  const catalog = Subscription.apiPlanToCatalogId(api);
   const keyMap = { basic: 'basic', professional: 'pro', pro: 'pro', premium: 'premium' };
   const localeKey = keyMap[catalog] || 'basic';
   try {
@@ -94,13 +96,13 @@ function goHome() {
 }
 
 function goPlans() {
-  const ctx = readPlanContext() || {};
-  writePlanContext({
+  const ctx = subscriptionsStore.readPlanContext() || {};
+  subscriptionsStore.writePlanContext({
     ...ctx,
     userId: user.value?.id,
     planApiValue: planApi.value,
     benefitsEndDate: ctx.benefitsEndDate,
-    catalogPlanId: apiPlanToCatalogId(planApi.value),
+    catalogPlanId: Subscription.apiPlanToCatalogId(planApi.value),
   });
   router.push({ name: 'plans' });
 }
