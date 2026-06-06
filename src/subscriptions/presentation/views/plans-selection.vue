@@ -1,17 +1,21 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import useSubscriptionsStore from '../../application/subscriptions.store.js';
-import { Subscription } from '../../domain/model/subscription.entity.js';
+import {
+  buildAllPlanCards,
+  catalogIdToApiPlan,
+  apiPlanToCatalogId,
+} from '../../application/plan-catalog.js';
 import {
   readAuthSession,
   writeAuthSession,
 } from '../../../iam/infrastructure/auth-session.js';
 import useIamStore from '../../../iam/application/iam.store.js';
 import MtConfirmDialog from '../../../shared/presentation/components/mt-confirm-dialog.vue';
-import { onBeforeRouteLeave } from 'vue-router';
+import '../styles/plans-shared.css';
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -20,62 +24,23 @@ const toast = useToast();
 const currentCatalogId = ref('basic');
 const benefitsEndDate = ref(null);
 const cancelOpen = ref(false);
+const showAllPlans = ref(false);
 const iamStore = useIamStore();
 const subscriptionsStore = useSubscriptionsStore();
 
-const planDefs = computed(() => [
-  {
-    id: 'basic',
-    name: t('plansPage.names.basic'),
-    price: t('plansPage.prices.basic'),
-    desc: t('plansPage.desc.basic'),
-    recommended: false,
-    features: [
-      { ok: true, text: t('plansPage.features.basic.0') },
-      { ok: true, text: t('plansPage.features.basic.1') },
-      { ok: true, text: t('plansPage.features.basic.2') },
-      { ok: true, text: t('plansPage.features.basic.3') },
-      { ok: false, text: t('plansPage.features.basic.4') },
-      { ok: false, text: t('plansPage.features.basic.5') },
-    ],
-  },
-  {
-    id: 'professional',
-    name: t('plansPage.names.pro'),
-    price: t('plansPage.prices.pro'),
-    desc: t('plansPage.desc.pro'),
-    recommended: true,
-    features: [
-      { ok: true, text: t('plansPage.features.pro.0') },
-      { ok: true, text: t('plansPage.features.pro.1') },
-      { ok: true, text: t('plansPage.features.pro.2') },
-      { ok: true, text: t('plansPage.features.pro.3') },
-    ],
-  },
-  {
-    id: 'premium',
-    name: t('plansPage.names.premium'),
-    price: t('plansPage.prices.premium'),
-    desc: t('plansPage.desc.premium'),
-    recommended: false,
-    features: [
-      { ok: true, text: t('plansPage.features.premium.0') },
-      { ok: true, text: t('plansPage.features.premium.1') },
-      { ok: true, text: t('plansPage.features.premium.2') },
-      { ok: true, text: t('plansPage.features.premium.3') },
-      { ok: true, text: t('plansPage.features.premium.4') },
-      { ok: true, text: t('plansPage.features.premium.5') },
-    ],
-    contactSales: true,
-  },
-]);
+const allPlans = computed(() => buildAllPlanCards(t));
+
+const visiblePlans = computed(() => {
+  if (showAllPlans.value) return allPlans.value;
+  return allPlans.value.filter((p) => p.id === currentCatalogId.value);
+});
 
 function syncFromSession() {
   const ctx = subscriptionsStore.readPlanContext();
   if (ctx?.catalogPlanId) {
     currentCatalogId.value = ctx.catalogPlanId;
   } else if (ctx?.planApiValue) {
-    currentCatalogId.value = Subscription.apiPlanToCatalogId(ctx.planApiValue);
+    currentCatalogId.value = apiPlanToCatalogId(ctx.planApiValue);
   }
   benefitsEndDate.value = ctx?.benefitsEndDate ?? null;
 }
@@ -128,15 +93,15 @@ const confirmCancel = () => {
   const auth = readAuthSession() || {};
   auth.plan = 'BASIC';
   writeAuthSession(auth);
-  // actualizar store IAM en memoria para que el perfil refleje el cambio inmediatamente
   try {
     iamStore.profilePlanApi = 'BASIC';
     iamStore.profileBenefitsEndDate = iso;
-  } catch (e) {
-    // no bloquear si falla (demo)
+  } catch {
+    /* demo */
   }
   currentCatalogId.value = 'basic';
   benefitsEndDate.value = iso;
+  showAllPlans.value = false;
   cancelOpen.value = false;
   toast.add({
     severity: 'success',
@@ -148,17 +113,8 @@ const confirmCancel = () => {
 
 const selectPlan = (catalogId) => {
   if (isCurrent(catalogId)) return;
-  const plan = planDefs.value.find((p) => p.id === catalogId);
-  if (plan?.contactSales) {
-    toast.add({
-      severity: 'info',
-      summary: t('plansPage.contactTitle'),
-      detail: t('plansPage.contactDetail'),
-      life: 4000,
-    });
-    return;
-  }
-  const apiVal = Subscription.catalogIdToApiPlan(catalogId);
+  const plan = allPlans.value.find((p) => p.id === catalogId);
+  const apiVal = catalogIdToApiPlan(catalogId);
   const end = new Date();
   end.setFullYear(end.getFullYear() + 1);
   const iso = end.toISOString().slice(0, 10);
@@ -175,9 +131,12 @@ const selectPlan = (catalogId) => {
   try {
     iamStore.profilePlanApi = apiVal;
     iamStore.profileBenefitsEndDate = iso;
-  } catch (e) {
-    // ignore
+  } catch {
+    /* demo */
   }
+  currentCatalogId.value = catalogId;
+  benefitsEndDate.value = iso;
+  showAllPlans.value = false;
   toast.add({
     severity: 'success',
     summary: t('plansPage.planUpdatedTitle'),
@@ -200,48 +159,54 @@ const selectPlan = (catalogId) => {
     <div class="plans-card">
       <header class="plans-head">
         <h1 class="plans-title">{{ t('plansPage.title') }}</h1>
-        <p class="plans-subtitle">{{ t('plansPage.subtitle') }}</p>
+        <p class="plans-subtitle">
+          {{ showAllPlans ? t('plansPage.subtitle') : t('plansPage.currentPlanSubtitle') }}
+        </p>
+        <button type="button" class="plans-toggle" @click="showAllPlans = !showAllPlans">
+          {{
+            showAllPlans ? t('plansPage.showCurrentPlanOnly') : t('plansPage.showAllPlans')
+          }}
+        </button>
       </header>
 
-      <div class="plans-grid">
+      <div class="plans-grid" :class="{ 'plans-grid--single': !showAllPlans }">
         <article
-          v-for="plan in planDefs"
+          v-for="plan in visiblePlans"
           :key="plan.id"
           class="plan-card"
           :class="{
             'plan-card--current': isCurrent(plan.id),
-            'plan-card--recommended': plan.recommended,
+            'plan-card--recommended': plan.recommended && showAllPlans,
           }"
         >
-          <div v-if="plan.recommended" class="badge-rec">{{ t('plansPage.recommended') }}</div>
+          <div v-if="plan.recommended && showAllPlans" class="badge-rec">
+            {{ t('plansPage.recommended') }}
+          </div>
           <h2 class="plan-name">{{ plan.name }}</h2>
           <p class="plan-price">{{ plan.price }}</p>
           <p class="plan-desc">{{ plan.desc }}</p>
           <ul class="plan-features">
-            <li v-for="(f, idx) in plan.features" :key="idx" :class="f.ok ? 'ok' : 'no'">
-              <i :class="f.ok ? 'pi pi-check' : 'pi pi-times'" aria-hidden="true"></i>
-              <span>{{ f.text }}</span>
-            </li>
+            <li v-for="(f, idx) in plan.features" :key="idx" class="bullet">{{ f }}</li>
           </ul>
           <div class="plan-actions">
-            <template v-if="isCurrent(plan.id)">
-              <button type="button" class="plan-btn plan-btn--danger" @click="openCancel">
-                <i class="pi pi-times-circle" aria-hidden="true"></i>
-                <span>{{ t('plansPage.cancelPlan') }}</span>
-              </button>
-            </template>
-            <template v-else-if="plan.contactSales">
-              <button type="button" class="plan-btn plan-btn--ghost" @click="selectPlan(plan.id)">
-                <span>{{ t('plansPage.contactSales') }}</span>
-                <i class="pi pi-envelope" aria-hidden="true"></i>
-              </button>
-            </template>
-            <template v-else>
-              <button type="button" class="plan-btn plan-btn--primary" @click="selectPlan(plan.id)">
-                <span>{{ t('plansPage.startNow') }}</span>
-                <i class="pi pi-arrow-right" aria-hidden="true"></i>
-              </button>
-            </template>
+            <button
+              v-if="isCurrent(plan.id)"
+              type="button"
+              class="plan-btn plan-btn--danger"
+              @click="openCancel"
+            >
+              <i class="pi pi-times-circle" aria-hidden="true"></i>
+              <span>{{ t('plansPage.cancelPlan') }}</span>
+            </button>
+            <button
+              v-else
+              type="button"
+              class="plan-btn plan-btn--primary"
+              @click="selectPlan(plan.id)"
+            >
+              <span>{{ t('plansPage.startNow') }}</span>
+              <i class="pi pi-arrow-right" aria-hidden="true"></i>
+            </button>
           </div>
         </article>
       </div>
@@ -303,8 +268,9 @@ const selectPlan = (catalogId) => {
   color: var(--mt-primary-hover);
 }
 
-.plans-back-btn i {
-  font-size: 0.8rem;
+.plans-grid--single {
+  grid-template-columns: minmax(0, 420px);
+  justify-content: center;
 }
 
 .plans-selection .plan-card {

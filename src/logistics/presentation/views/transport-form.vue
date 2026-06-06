@@ -6,6 +6,11 @@ import { useToast } from 'primevue/usetoast';
 import useLogisticsStore from '../../application/logistics.store.js';
 import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 import { getNextMockTransportId } from '../../../shared/infrastructure/mocks/mock-database.js';
+import {
+  checkPlanLimit,
+  resolveCurrentPlanCatalogId,
+  buildPlanCard,
+} from '../../../subscriptions/application/plan-catalog.js';
 
 const logisticsStore = useLogisticsStore();
 const router = useRouter();
@@ -93,6 +98,18 @@ function buildPayload() {
 
 async function handleConfirm() {
   if (isSaving.value) return;
+
+  const catalogId = resolveCurrentPlanCatalogId();
+  const check = checkPlanLimit(catalogId, 'vehicleDevices', logisticsStore.transports.length);
+  if (!check.allowed) {
+    const plan = buildPlanCard(catalogId, t);
+    toast.add({
+      severity: 'warn',
+      summary: t('plansPage.limits.vehicleDevices', { limit: check.limit, plan: plan.name }),
+      life: 5000,
+    });
+    return;
+  }
 
   isSaving.value = true;
   try {

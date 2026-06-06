@@ -473,6 +473,9 @@
   "plansPage": {
     "title": "Elige un plan",
     "subtitle": "Selecciona la capacidad operativa de su red.",
+    "currentPlanSubtitle": "Detalle de tu plan activo y límites incluidos.",
+    "showAllPlans": "Ver todos los planes",
+    "showCurrentPlanOnly": "Ver solo mi plan",
     "back": "Volver al perfil",
     "recommended": "Recomendado",
     "cancelPlan": "Cancelar plan",
@@ -499,7 +502,7 @@
     "prices": {
       "basic": "US$ 49 / mes",
       "premium": "US$ 149 / mes",
-      "enterprise": "US$ 500 / mes",
+      "enterprise": "US$ 560 / mes",
       "pro": "US$ 149 / mes"
     },
     "desc": {
@@ -517,6 +520,11 @@
       "operators": "Gestión de operadores",
       "enterpriseExtras": "Mapa nacional y alta disponibilidad",
       "reports": "Informes y centro de control"
+    },
+    "limits": {
+      "establishments": "Has alcanzado el límite de {limit} sedes de tu plan {plan}.",
+      "staticDevices": "Has alcanzado el límite de {limit} dispositivos estáticos de tu plan {plan}.",
+      "vehicleDevices": "Has alcanzado el límite de {limit} transportes monitoreados de tu plan {plan}."
     },
     "features": {
       "basic": {
