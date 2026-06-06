@@ -4,6 +4,11 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import useEstablishmentStore from '../../application/establishment.store.js';
+import {
+  checkPlanLimit,
+  resolveCurrentPlanCatalogId,
+  buildPlanCard,
+} from '../../../subscriptions/application/plan-catalog.js';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -38,6 +43,18 @@ const goBack = () => {
 
 const handleSave = async () => {
   if (isSaving.value) return;
+
+  const catalogId = resolveCurrentPlanCatalogId();
+  const check = checkPlanLimit(catalogId, 'establishments', establishments.value.length);
+  if (!check.allowed) {
+    const plan = buildPlanCard(catalogId, t);
+    toast.add({
+      severity: 'warn',
+      summary: t('plansPage.limits.establishments', { limit: check.limit, plan: plan.name }),
+      life: 5000,
+    });
+    return;
+  }
 
   isSaving.value = true;
   try {

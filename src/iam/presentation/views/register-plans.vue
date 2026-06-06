@@ -2,15 +2,14 @@
 import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { useToast } from 'primevue/usetoast';
 import AuthPanel from '../components/auth-panel.vue';
 import { saveRegistrationPlan } from '../../infrastructure/auth.service.js';
 import { readPendingRegistration } from '../../infrastructure/auth-session.js';
-import { Subscription } from '../../../subscriptions/domain/model/subscription.entity.js';
+import { buildAllPlanCards } from '../../../subscriptions/application/plan-catalog.js';
+import '../../../subscriptions/presentation/styles/plans-shared.css';
 
 const { t } = useI18n();
 const router = useRouter();
-const toast = useToast();
 
 onMounted(() => {
   if (!readPendingRegistration()) {
@@ -18,42 +17,9 @@ onMounted(() => {
   }
 });
 
-const plans = computed(() =>
-  Subscription.PLAN_CATALOG_ORDER.map((id) => {
-    const def = Subscription.getPlanByCatalogId(id);
-    const limits = def.limits;
-    return {
-      id,
-      name: t(`plansPage.names.${id}`),
-      price: t(`plansPage.prices.${id}`),
-      desc: t(`plansPage.desc.${id}`),
-      recommended: def.recommended,
-      contactSales: id === 'enterprise',
-      features: [
-        t('plansPage.featureLabels.establishments', { n: limits.establishments }),
-        t('plansPage.featureLabels.staticDevices', { n: limits.staticDevices }),
-        t('plansPage.featureLabels.vehicleDevices', { n: limits.vehicleDevices }),
-        def.customParameters
-          ? t('plansPage.featureLabels.customParamsYes')
-          : t('plansPage.featureLabels.customParamsNo'),
-        t('plansPage.featureLabels.operators'),
-        ...(id === 'enterprise' ? [t('plansPage.featureLabels.enterpriseExtras')] : []),
-        t('plansPage.featureLabels.reports'),
-      ],
-    };
-  }),
-);
+const plans = computed(() => buildAllPlanCards(t));
 
 function selectPlan(plan) {
-  if (plan.contactSales) {
-    toast.add({
-      severity: 'info',
-      summary: t('plansPage.contactTitle'),
-      detail: t('plansPage.contactDetail'),
-      life: 4000,
-    });
-    return;
-  }
   saveRegistrationPlan(plan.id);
   router.push({ name: 'iam-billing' });
 }
@@ -88,21 +54,7 @@ function goBack() {
               <li v-for="(f, i) in plan.features" :key="i" class="bullet">{{ f }}</li>
             </ul>
             <div class="plan-actions">
-              <button
-                v-if="plan.contactSales"
-                type="button"
-                class="plan-btn plan-btn--ghost"
-                @click="selectPlan(plan)"
-              >
-                <span>{{ t('plansPage.contactSales') }}</span>
-                <i class="pi pi-envelope" aria-hidden="true"></i>
-              </button>
-              <button
-                v-else
-                type="button"
-                class="plan-btn plan-btn--primary"
-                @click="selectPlan(plan)"
-              >
+              <button type="button" class="plan-btn plan-btn--primary" @click="selectPlan(plan)">
                 <span>{{ t('plansPage.startNow') }}</span>
                 <i class="pi pi-arrow-right" aria-hidden="true"></i>
               </button>
