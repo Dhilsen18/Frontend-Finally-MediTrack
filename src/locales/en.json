@@ -473,6 +473,9 @@
   "plansPage": {
     "title": "Choose a plan",
     "subtitle": "Select capacity for your monitoring network.",
+    "currentPlanSubtitle": "Your active plan details and included limits.",
+    "showAllPlans": "View all plans",
+    "showCurrentPlanOnly": "View my plan only",
     "back": "Back to profile",
     "recommended": "Recommended",
     "cancelPlan": "Cancel plan",
@@ -499,7 +502,7 @@
     "prices": {
       "basic": "US$ 49 / month",
       "premium": "US$ 149 / month",
-      "enterprise": "US$ 500 / month",
+      "enterprise": "US$ 560 / month",
       "pro": "US$ 149 / month"
     },
     "desc": {
@@ -517,6 +520,11 @@
       "operators": "Operator management",
       "enterpriseExtras": "National map and high availability",
       "reports": "Reports and control center"
+    },
+    "limits": {
+      "establishments": "You reached the {limit} site limit for your {plan} plan.",
+      "staticDevices": "You reached the {limit} static device limit for your {plan} plan.",
+      "vehicleDevices": "You reached the {limit} monitored transport limit for your {plan} plan."
     },
     "features": {
       "basic": {

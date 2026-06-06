@@ -33,10 +33,8 @@ const form = ref({
 const planDisplay = computed(() => {
   const api = String(planApi.value || 'BASIC').toUpperCase();
   const catalog = Subscription.apiPlanToCatalogId(api);
-  const keyMap = { basic: 'basic', professional: 'pro', pro: 'pro', premium: 'premium' };
-  const localeKey = keyMap[catalog] || 'basic';
   try {
-    return t(`plansPage.names.${localeKey}`);
+    return t(`plansPage.names.${catalog}`);
   } catch {
     return String(api);
   }

@@ -6,6 +6,11 @@ import { useToast } from 'primevue/usetoast';
 import useMonitoringStore from '../../application/monitoring.store.js';
 import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 import { getNextMockDeviceId } from '../../../shared/infrastructure/mocks/mock-database.js';
+import {
+  checkPlanLimit,
+  resolveCurrentPlanCatalogId,
+  buildPlanCard,
+} from '../../../subscriptions/application/plan-catalog.js';
 
 const monitoringStore = useMonitoringStore();
 const router = useRouter();
@@ -89,6 +94,18 @@ function buildPayload() {
 async function handleConfirm() {
   if (!form.value.exact_location.trim()) return;
   if (isSaving.value) return;
+
+  const catalogId = resolveCurrentPlanCatalogId();
+  const check = checkPlanLimit(catalogId, 'staticDevices', monitoringStore.devices.length);
+  if (!check.allowed) {
+    const plan = buildPlanCard(catalogId, t);
+    toast.add({
+      severity: 'warn',
+      summary: t('plansPage.limits.staticDevices', { limit: check.limit, plan: plan.name }),
+      life: 5000,
+    });
+    return;
+  }
 
   isSaving.value = true;
   try {
